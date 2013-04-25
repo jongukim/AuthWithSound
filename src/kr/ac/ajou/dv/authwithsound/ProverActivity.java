@@ -75,6 +75,7 @@ public class ProverActivity extends Activity {
         }
     }
 
+    @SuppressWarnings("unused")
     public void startPlaynRec(View view) {
         new ProvingTask().execute();
     }

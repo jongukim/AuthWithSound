@@ -34,11 +34,13 @@ public class MainActivity extends Activity {
         }
     }
 
+    @SuppressWarnings("unused")
     public void startProver(View view) {
         Intent intent = new Intent(this, ProverActivity.class);
         startActivity(intent);
     }
 
+    @SuppressWarnings("unused")
     public void startVerifier(View view) {
         Intent intent = new Intent(this, VerifierActivity.class);
         startActivity(intent);
