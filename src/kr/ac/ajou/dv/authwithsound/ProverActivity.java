@@ -75,10 +75,6 @@ public class ProverActivity extends Activity {
         }
     }
 
-    /*
-    버튼을 누르는 것이 더 낫겠다.
-    그래야 멀리서 테스트 해볼 수 있다.
-     */
     public void startPlaynRec(View view) {
         new ProvingTask().execute();
     }
