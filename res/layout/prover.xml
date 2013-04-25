@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="fill_parent"
+              android:layout_height="fill_parent" android:orientation="vertical">
+    <Button
+            android:layout_width="fill_parent"
+            android:layout_height="74dp"
+            android:text="Start Prover"
+            android:id="@+id/button_start_prover" android:layout_gravity="center_horizontal|top"
+            android:textSize="20sp" android:onClick="startPlaynRec"/>
+    <ScrollView
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:id="@+id/scrollView">
+        <TextView android:id="@+id/text_right_params"
+                  android:layout_height="match_parent"
+                  android:layout_width="match_parent"
+                />
+    </ScrollView>
+</LinearLayout>
