@@ -128,6 +128,8 @@ public class ProverActivity extends Activity {
                 e.printStackTrace();
             } catch (IOException e) {
                 e.printStackTrace();
+            } catch (AudioException e) {
+                e.printStackTrace();
             }
             return success;
         }

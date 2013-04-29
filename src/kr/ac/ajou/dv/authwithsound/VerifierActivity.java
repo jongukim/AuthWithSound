@@ -184,6 +184,8 @@ public class VerifierActivity extends Activity {
                 publishProgress("TVFailed to wait for recording.");
             } catch (IOException e) {
                 e.printStackTrace();
+            } catch (AudioException e) {
+                e.printStackTrace();
             }
             Log.d(MainActivity.TAG, "Verififer's cycle is complete.");
             return success;

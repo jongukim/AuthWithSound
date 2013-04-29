@@ -45,4 +45,10 @@ public class MainActivity extends Activity {
         Intent intent = new Intent(this, VerifierActivity.class);
         startActivity(intent);
     }
+
+    @SuppressWarnings("unused")
+    public void startFftTest(View view) {
+        Intent intent = new Intent(this, FftTestActivity.class);
+        startActivity(intent);
+    }
 }
