@@ -20,6 +20,10 @@ public class FftTestActivity extends Activity {
         in[7] = -0.2873;
         double[] result = FftHelper.fftw(in, 8);
         for (double r : result)
-            tv.append("\n" + r);
+            tv.append(r + "\n");
+
+        tv.append("\n");
+        double[] abses = FftHelper.getAbs(result);
+        for(double a: abses) tv.append(a + "\n");
     }
 }

@@ -28,7 +28,7 @@
     <Button
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:text="FFT Tests"
+            android:text="@string/button_label_fft_test"
             android:id="@+id/button" android:onClick="startFftTest"/>
 </LinearLayout>
 

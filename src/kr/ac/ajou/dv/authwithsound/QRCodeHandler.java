@@ -3,7 +3,7 @@ package kr.ac.ajou.dv.authwithsound;
 import java.util.HashMap;
 import java.util.Map;
 
-public class QRCodeHandler {
+class QRCodeHandler {
     public static final String IP = "IP_ADDR";
     public static final String PORT = "PORT_NUM";
     public static final String SSID = "AP_SSID";

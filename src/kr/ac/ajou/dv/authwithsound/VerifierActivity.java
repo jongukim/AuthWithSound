@@ -134,11 +134,11 @@ public class VerifierActivity extends Activity {
                     recordingTask.start();
                     wavPlayTask.start();
                     recordingTask.join();
-                    wavPlayTask.join();
+                    wavPlayTask.interrupt();
 
                     long start = System.nanoTime();
                     // get recording data from me (verifier)
-                    List<String> result = recordingTask.getResult();
+                    List<int[]> result = recordingTask.getResult();
                     long time = System.nanoTime() - start;
                     publishProgress("TVAnalying time: " + String.format("%,d", time));
 
@@ -146,26 +146,12 @@ public class VerifierActivity extends Activity {
                     bufReader.close();
                     bufWriter.close();
 
-                    String[] fromProver = recv.split(",");
+                    String[] fromProver = recv.split("|");
                     publishProgress("TV# of recorded: " + result.size());
                     publishProgress("TV# of received: " + fromProver.length);
 
-                    // extra points for duplicate hints
-                    HashMap<String, Integer> scoreboard = new HashMap<String, Integer>();
-                    for (String hint : result) {
-                        if (scoreboard.containsKey(hint)) {
-                            scoreboard.put(hint, scoreboard.get(hint) + 1);
-                        } else {
-                            scoreboard.put(hint, 1);
-                        }
-                    }
+                    int points = compare(result, fromProver);
 
-                    int points = 0;
-                    for (String fromP : fromProver) { // prover가 보낸 것을 차례로 비교
-                        if (scoreboard.containsKey(fromP)) {
-                            points += scoreboard.get(fromP); // 일치하는 것이 있으면 점수 추가.
-                        }
-                    }
                     publishProgress("TVPoints: " + points);
                     mSocket.close();
 
@@ -189,6 +175,12 @@ public class VerifierActivity extends Activity {
             }
             Log.d(MainActivity.TAG, "Verififer's cycle is complete.");
             return success;
+        }
+
+        private int compare(List<int[]> result, String[] fromProver) {
+            Log.i(MainActivity.TAG, result.size() + ", " + fromProver.length);
+
+            return 0;
         }
 
         @Override

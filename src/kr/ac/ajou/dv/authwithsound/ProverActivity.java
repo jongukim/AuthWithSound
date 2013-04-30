@@ -100,15 +100,14 @@ public class ProverActivity extends Activity {
                     recordingTask.start();
                     wavPlayTask.start();
                     recordingTask.join();
-                    wavPlayTask.join();
+                    wavPlayTask.interrupt();
 
                     publishProgress("Analyzing the recordings.");
-                    List<String> result = recordingTask.getResult();
+                    List<int[]> result = recordingTask.getResult();
                     StringBuilder sb = new StringBuilder();
-                    for (String s : result) {
-                        sb.append(s).append(","); // joins all results
-                    }
-                    publishProgress("Sending the analyzed data.");
+                    for (int[] s : result)
+                        sb.append(s[0]).append(",").append(s[1]).append(",").append(s[2]).append(",").append(s[3]).append("|"); // joins all results
+                    publishProgress("Sending the analyzed data (" + result.size() + " samples)");
                     socket = new Socket(ipaddr, Integer.parseInt(port));
                     bufWriter.write(sb.toString());
                     bufWriter.newLine();

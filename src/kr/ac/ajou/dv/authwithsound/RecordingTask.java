@@ -9,11 +9,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 
-public class RecordingTask extends Thread {
-    public static final int FUZZ_FACTOR = 2;
-    public static final int WINDOW_SIZE = 8;
+class RecordingTask extends Thread {
+    private static final int FUZZ_FACTOR = 2;
+    private static final int WINDOW_SIZE = 8;
     private static final int SAMPLE_RATE = 32000;
-    private static final int SAMPLE_COUNT = 1260; // 2^2 * 3^2 * 5*2 * 7
+    private static final int SAMPLE_COUNT = 50;
     private static final int BUFFER_SIZE = 4096;
     private static final int SAMPLE_SIZE = 4096 / (Short.SIZE / Byte.SIZE);
     private static final int SUB_CHUNK_SIZE = (SAMPLE_SIZE / WINDOW_SIZE);
@@ -58,9 +58,9 @@ public class RecordingTask extends Thread {
         return sb.toString();
     }
 
-    public List<String> getResult() {
+    public List<int[]> getResult() {
         if (recorded == null) return null;
-        ArrayList<String> hints = new ArrayList<String>();
+        ArrayList<int[]> hints = new ArrayList<int[]>();
             /* We do not analyze each recorded unit (e.g. 4096 bytes) because we overcome the timing issue.
             As using the window scheme, after we got subchunks, bind them like
             (1, 2, 3, 4)
@@ -85,11 +85,13 @@ public class RecordingTask extends Thread {
                 System.arraycopy(b, 0, chunk, offset, SUB_CHUNK_SIZE);
                 offset += SUB_CHUNK_SIZE;
             }
-//            int[] points = FftHelper.fftw(chunk, SAMPLE_SIZE);
-//            hints.add(fuzz(points));
+            double[] sample = new double[SAMPLE_SIZE];
+            for (int i = 0; i < SAMPLE_COUNT; i++) sample[i] = chunk[i];
+
+            double[] analyzed = FftHelper.getAbs(FftHelper.fftw(sample, SAMPLE_COUNT));
+            hints.add(FftHelper.getIntensivePoints(analyzed));
             position++;
         }
-        Log.i(MainActivity.TAG, "# of all sound chunks: " + position);
         return hints;
     }
 
