@@ -9,13 +9,17 @@
             android:text="@string/prover_button"
             android:id="@+id/button_start_prover" android:layout_gravity="center_horizontal|top"
             android:textSize="20sp" android:onClick="startPlaynRec"/>
+
+    <kr.ac.ajou.dv.authwithsound.WavDrawView android:layout_width="fill_parent"
+                                             android:layout_height="100dp"
+                                             android:id="@+id/prover_wavform"
+                                             android:background="@android:color/white"/>
+
     <ScrollView
             android:layout_width="fill_parent"
-            android:layout_height="fill_parent"
-            android:id="@+id/scrollView">
-        <TextView android:id="@+id/text_right_params"
+            android:layout_height="fill_parent">
+        <TextView android:id="@+id/prover_log"
                   android:layout_height="wrap_content"
-                  android:layout_width="match_parent"
-                />
+                  android:layout_width="match_parent"/>
     </ScrollView>
 </LinearLayout>

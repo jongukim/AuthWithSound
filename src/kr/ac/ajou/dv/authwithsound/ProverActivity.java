@@ -11,20 +11,24 @@ import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.List;
 import java.util.Map;
 
 public class ProverActivity extends Activity {
+    public static final String TAG = MainActivity.TAG.concat(ProverActivity.class.getSimpleName());
     private TextView tv;
     private Context ctx;
     private String ipaddr;
     private String port;
     private Socket socket;
-    private BufferedWriter bufWriter;
-    private BufferedReader bufReader;
+    private ObjectOutputStream sockOut;
+    private ObjectInputStream sockIn;
+    private WavDrawView wavView;
 
     public void onCreate(Bundle savedInstanceState) {
         /*
@@ -36,8 +40,20 @@ public class ProverActivity extends Activity {
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.prover);
+        tv = (TextView) findViewById(R.id.prover_log);
+        wavView = (WavDrawView) findViewById(R.id.prover_wavform);
         ctx = this;
-        tv = (TextView) findViewById(R.id.text_right_params);
+    }
+
+    @Override
+    protected void onDestroy() {
+        try {
+            sockIn.close();
+            sockOut.close();
+            socket.close();
+        } catch (IOException e) {
+        }
+        super.onDestroy();
     }
 
     @Override
@@ -46,7 +62,7 @@ public class ProverActivity extends Activity {
             if (resultCode == RESULT_OK) {
                 String contents = data.getStringExtra("SCAN_RESULT");
                 String format = data.getStringExtra("SCAN_RESULT_FORMAT");
-                Log.d(MainActivity.TAG, "Return: " + contents + " (Format: " + format + ")");
+                Log.d(TAG, "Return: " + contents + " (Format: " + format + ")");
                 Map<String, String> map = QRCodeHandler.decode(contents);
                 String ssid = map.get(QRCodeHandler.SSID);
                 ipaddr = map.get(QRCodeHandler.IP);
@@ -58,16 +74,15 @@ public class ProverActivity extends Activity {
 
                 try {
                     socket = new Socket(ipaddr, Integer.parseInt(port));
-                    Log.d(MainActivity.TAG, "A socket is open.");
-                    bufWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-                    bufReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                    Log.d(MainActivity.TAG, "Each input/output stream is open.");
-                    bufWriter.write("CAPTURE");
-                    bufWriter.newLine();
-                    bufWriter.flush();
-                    Log.d(MainActivity.TAG, "Sent a READY message and waiting a response...");
-                    bufReader.readLine();
-                    Log.d(MainActivity.TAG, "Everything is OK. I start to record and play.");
+                    Log.d(TAG, "A socket is open.");
+                    sockOut = new ObjectOutputStream(socket.getOutputStream());
+                    sockIn = new ObjectInputStream(socket.getInputStream());
+                    Log.d(TAG, "Each input/output stream is open.");
+                    sockOut.writeUTF("CAPTURE");
+                    sockOut.flush();
+                    Log.d(TAG, "Sent a READY message and waiting a response...");
+                    sockIn.readUTF();
+                    Log.d(TAG, "Everything is OK. I start to record and play.");
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -83,46 +98,36 @@ public class ProverActivity extends Activity {
     private class ProvingTask extends AsyncTask<Void, String, Boolean> {
         @Override
         protected Boolean doInBackground(Void... voids) {
-            boolean success = false;
             try {
-                RecordingTask recordingTask = new RecordingTask();
+                RecordingTask recordingTask = new RecordingTask(wavView);
                 WavPlayTask wavPlayTask = new WavPlayTask(ctx, WavPlayTask.ROLE_PROVER);
+                CryptoUtils crypto = new CryptoUtils();
 
-                bufWriter.write("READY");
-                bufWriter.newLine();
-                bufWriter.flush();
+                if (!recordingTask.isReady() || !crypto.ready()) return false;
 
-                Log.d(MainActivity.TAG, "Sent a READY message and waiting a response...");
-                bufReader.readLine();
+                sockOut.writeUTF("HELLO");
+                sockOut.flush();
 
-                if (recordingTask.isReady()) {
-                    // recording and playing at the same time
-                    recordingTask.start();
-                    wavPlayTask.start();
-                    recordingTask.join();
-                    wavPlayTask.interrupt();
+                responsePing(crypto);
 
-                    publishProgress("Analyzing the recordings.");
-                    List<int[]> result = recordingTask.getResult();
-                    StringBuilder sb = new StringBuilder();
-                    for (int[] s : result)
-                        sb.append(s[0]).append(",").append(s[1]).append(",").append(s[2]).append(",").append(s[3]).append("|"); // joins all results
-                    publishProgress("Sending the analyzed data (" + result.size() + " samples)");
-                    socket = new Socket(ipaddr, Integer.parseInt(port));
-                    bufWriter.write(sb.toString());
-                    bufWriter.newLine();
-                    bufWriter.flush();
-                    bufWriter.close();
-                    bufReader.close();
-                    publishProgress("Sent.");
-                    Log.d(MainActivity.TAG, "Sent all recording data.");
-                    socket.close();
-                    success = true;
-                } else {
-                    Log.e(MainActivity.TAG, "Failed to initialize the recording and playing.");
-                }
+                // recording and playing at the same time
+                recordingTask.start();
+                wavPlayTask.start();
+                recordingTask.join();
+                wavPlayTask.interrupt();
+
+                List<Coordinate> result =  SoundAnalyzer.analyze(recordingTask.getResult());
+
+                byte[] cipherText = crypto.doit(SoundAnalyzer.peaksToString(result).getBytes());
+                sockOut.writeInt(cipherText.length);
+                sockOut.write(cipherText);
+                sockOut.flush();
+                publishProgress("Sent.");
+                Log.d(TAG, "Sent all recording data.");
+
+                responsePing(crypto);
             } catch (InterruptedException e) {
-                Log.e(MainActivity.TAG, "Failed to wait for recording.");
+                Log.e(TAG, "Failed to wait for recording.");
             } catch (UnknownHostException e) {
                 e.printStackTrace();
             } catch (IOException e) {
@@ -130,7 +135,17 @@ public class ProverActivity extends Activity {
             } catch (AudioException e) {
                 e.printStackTrace();
             }
-            return success;
+            return true;
+        }
+
+        private void responsePing(CryptoUtils crypto) throws IOException {
+            sockIn.readUTF(); // read PING
+            int nonce = sockIn.readInt();
+            byte[] cipher = crypto.doit(String.valueOf(nonce).getBytes());
+            sockOut.writeInt(cipher.length);
+            sockOut.write(cipher);
+            sockOut.flush();
+            publishProgress("Nonce: " + nonce);
         }
 
         @Override
@@ -144,11 +159,18 @@ public class ProverActivity extends Activity {
         @Override
         protected void onPostExecute(Boolean result) {
             super.onPostExecute(result);
+            wavView.invalidate();
+            try {
+                sockOut.close();
+                sockIn.close();
+                socket.close();
+            } catch (IOException e) {
+            }
             if (result) {
                 new AlertDialog.Builder(ProverActivity.this)
                         .setIcon(android.R.drawable.ic_dialog_alert)
                         .setTitle("Authentication")
-                        .setMessage("Waiting for the next prover?")
+                        .setMessage("Next prover?")
                         .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {

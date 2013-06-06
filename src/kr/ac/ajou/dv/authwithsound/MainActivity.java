@@ -41,8 +41,20 @@ public class MainActivity extends Activity {
     }
 
     @SuppressWarnings("unused")
+    public void startMaliciousProver(View view) {
+        Intent intent = new Intent(this, MaliciousProverActivity.class);
+        startActivity(intent);
+    }
+
+    @SuppressWarnings("unused")
     public void startVerifier(View view) {
         Intent intent = new Intent(this, VerifierActivity.class);
+        startActivity(intent);
+    }
+
+    @SuppressWarnings("unused")
+    public void startMaliciousVerifier(View view) {
+        Intent intent = new Intent(this, MaliciousVerifierActivity.class);
         startActivity(intent);
     }
 

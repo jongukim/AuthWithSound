@@ -18,6 +18,7 @@ public class FftTestActivity extends Activity {
         in[5] = 0.4694;
         in[6] = 0.0001;
         in[7] = -0.2873;
+        // 8 inputs, 5 outpus
         double[] result = FftHelper.fftw(in, 8);
         for (double r : result)
             tv.append(r + "\n");

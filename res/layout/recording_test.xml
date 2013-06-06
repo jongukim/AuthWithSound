@@ -5,16 +5,14 @@
               android:layout_height="fill_parent" android:orientation="vertical">
     <kr.ac.ajou.dv.authwithsound.WavDrawView android:layout_width="fill_parent"
                                              android:layout_height="100dp"
-                                             android:id="@+id/verifier_wavform"
+                                             android:id="@+id/recording_test_wavform"
                                              android:background="@android:color/white"/>
 
     <ScrollView android:layout_width="fill_parent"
-                android:layout_height="fill_parent"
-                android:id="@+id/verifier_scrollview">
-        <TextView android:layout_height="wrap_content"
+                android:layout_height="fill_parent">
+        <TextView android:id="@+id/recoding_test_log"
+                  android:layout_height="wrap_content"
                   android:layout_width="match_parent"
-                  android:id="@+id/verifier_log"
                   android:text=""/>
     </ScrollView>
-
 </LinearLayout>

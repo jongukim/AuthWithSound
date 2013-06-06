@@ -2,31 +2,37 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
               android:orientation="vertical"
               android:layout_width="fill_parent"
-              android:layout_height="fill_parent"
-        >
+              android:layout_height="fill_parent">
+
     <TextView android:id="@+id/main_text_info"
               android:layout_height="wrap_content"
               android:layout_width="wrap_content"
-              android:textSize="20sp"/>
+              android:textSize="15sp"/>
+
     <Button android:id="@+id/main_button_prover"
             android:layout_height="match_parent"
             android:layout_width="match_parent"
-            android:layout_weight="0.5"
+            android:layout_weight="0.2"
             android:text="@string/button_label_prover"
             android:onClick="startProver"
-            android:textSize="30sp"
-            />
+            android:textSize="25sp"/>
 
+    <Button android:id="@+id/main_button_malicious_verifier" android:layout_height="match_parent"
+            android:layout_width="match_parent" android:layout_weight="0.2" android:text="@string/button_label_malicious_verifier"
+            android:onClick="startMaliciousVerifier" android:textSize="25sp"/>
+    <Button android:id="@+id/main_button_malicious_prover" android:layout_height="match_parent"
+            android:layout_width="match_parent" android:layout_weight="0.2" android:text="@string/button_label_malicious_prover"
+            android:onClick="startMaliciousProver" android:textSize="25sp"/>
     <Button android:id="@+id/main_button_verifier"
             android:layout_height="match_parent"
             android:layout_width="match_parent"
-            android:layout_weight="0.5"
+            android:layout_weight="0.2"
             android:text="@string/button_label_verifier"
             android:onClick="startVerifier"
-            android:textSize="30sp"
-            />
+            android:textSize="25sp"/>
+
     <Button
-            android:layout_width="fill_parent"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/button_label_fft_test"
             android:id="@+id/button" android:onClick="startFftTest"/>
