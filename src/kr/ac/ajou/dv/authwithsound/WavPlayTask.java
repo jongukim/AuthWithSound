@@ -4,8 +4,9 @@ import android.content.Context;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.util.Log;
+import kr.ac.ajou.dv.authwithsound.activities.MainActivity;
 
-class WavPlayTask extends Thread {
+public class WavPlayTask extends Thread {
     public static final String TAG = MainActivity.TAG.concat(WavPlayTask.class.getSimpleName());
     public static final int ROLE_VERIFIER = 1;
     public static final int ROLE_PROVER = 2;
@@ -27,8 +28,6 @@ class WavPlayTask extends Thread {
         MediaPlayer mp = MediaPlayer.create(ctx, (which == ROLE_VERIFIER) ? R.raw.stutter : R.raw.billie_jean);
         mp.setVolume(1.0f, 1.0f);
 
-        // if you want to play wav from a random point
-        // int startPoint = (int) (Math.random() * (mp.getDuration() - MAX_PLAYING_TIME * 8)) + MAX_PLAYING_TIME * 4;
         int startPoint = (which == ROLE_VERIFIER) ? mp.getDuration() / 2 : mp.getDuration() / 2;
         mp.seekTo(startPoint);
         mp.start();

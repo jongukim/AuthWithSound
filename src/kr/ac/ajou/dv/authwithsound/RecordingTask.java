@@ -4,10 +4,11 @@ import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
 import android.util.Log;
+import kr.ac.ajou.dv.authwithsound.activities.MainActivity;
 
 import java.util.List;
 
-class RecordingTask extends Thread {
+public class RecordingTask extends Thread {
     public static final String TAG = MainActivity.TAG.concat(RecordingTask.class.getSimpleName());
 
     private static final int INITIAL_TRASH = 2;

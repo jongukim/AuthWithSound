@@ -1,6 +1,6 @@
 package kr.ac.ajou.dv.authwithsound;
 
-class FftHelper {
+public class FftHelper {
     static {
         System.loadLibrary("analyzer");
     }

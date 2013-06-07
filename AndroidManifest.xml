@@ -13,16 +13,16 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
 
     <application android:label="@string/app_name">
-        <activity android:name="MainActivity"
+        <activity android:name=".activities.MainActivity"
                   android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        <activity android:name=".ProverActivity"/>
-        <activity android:name=".VerifierActivity"
+        <activity android:name=".activities.ProverActivity"/>
+        <activity android:name=".activities.VerifierActivity"
                   android:launchMode="singleTask"/>
-        <activity android:name=".FftTestActivity"/>
+        <activity android:name=".activities.FftTestActivity"/>
     </application>
 </manifest>

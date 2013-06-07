@@ -1,4 +1,4 @@
-package kr.ac.ajou.dv.authwithsound;
+package kr.ac.ajou.dv.authwithsound.activities;
 
 import android.app.Activity;
 import android.content.Context;
@@ -7,6 +7,7 @@ import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
+import kr.ac.ajou.dv.authwithsound.R;
 
 /*
 MainActivity shows two buttons: prover / verifier

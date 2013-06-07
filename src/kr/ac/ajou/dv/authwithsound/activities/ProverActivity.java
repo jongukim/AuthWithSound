@@ -1,4 +1,4 @@
-package kr.ac.ajou.dv.authwithsound;
+package kr.ac.ajou.dv.authwithsound.activities;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -10,6 +10,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
+import kr.ac.ajou.dv.authwithsound.*;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;

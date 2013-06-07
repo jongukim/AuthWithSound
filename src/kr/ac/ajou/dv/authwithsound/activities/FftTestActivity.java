@@ -1,8 +1,10 @@
-package kr.ac.ajou.dv.authwithsound;
+package kr.ac.ajou.dv.authwithsound.activities;
 
 import android.app.Activity;
 import android.os.Bundle;
 import android.widget.TextView;
+import kr.ac.ajou.dv.authwithsound.FftHelper;
+import kr.ac.ajou.dv.authwithsound.R;
 
 public class FftTestActivity extends Activity {
     public void onCreate(Bundle savedInstanceState) {

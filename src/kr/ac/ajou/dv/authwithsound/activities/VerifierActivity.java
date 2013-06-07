@@ -1,4 +1,4 @@
-package kr.ac.ajou.dv.authwithsound;
+package kr.ac.ajou.dv.authwithsound.activities;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -14,6 +14,7 @@ import android.text.format.Formatter;
 import android.util.Log;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import kr.ac.ajou.dv.authwithsound.*;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -28,7 +29,6 @@ public class VerifierActivity extends Activity {
     public static final String TAG = MainActivity.TAG.concat(VerifierActivity.class.getSimpleName());
     private static final int MAX_TRY = 10;
     private static final int VERIFIED_THRESHOLD = 35;
-//    private static final int SIMILAR_POINT = 4;
     private static final double NANO_TO_MILLISEC = 1000.0 * 1000.0;
     private static final double NANO_TO_SEC = NANO_TO_MILLISEC * 1000.0;
 
