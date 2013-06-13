@@ -16,7 +16,6 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.util.List;
 import java.util.Map;
 
@@ -102,14 +101,15 @@ public class ProverActivity extends Activity {
             try {
                 RecordingTask recordingTask = new RecordingTask(wavView);
                 WavPlayTask wavPlayTask = new WavPlayTask(ctx, WavPlayTask.ROLE_PROVER);
-                CryptoUtils crypto = new CryptoUtils();
 
-                if (!recordingTask.isReady() || !crypto.ready()) return false;
+                if (!recordingTask.isReady()) return false;
 
                 sockOut.writeUTF("HELLO");
                 sockOut.flush();
 
-                responsePing(crypto);
+                sockIn.readUTF(); // read CHECK
+                int nonce = sockIn.readInt();
+                publishProgress("Nonce: " + nonce);
 
                 // recording and playing at the same time
                 recordingTask.start();
@@ -117,36 +117,16 @@ public class ProverActivity extends Activity {
                 recordingTask.join();
                 wavPlayTask.interrupt();
 
-                List<Coordinate> result =  SoundAnalyzer.analyze(recordingTask.getResult());
-
-                byte[] cipherText = crypto.doit(SoundAnalyzer.peaksToString(result).getBytes());
-                sockOut.writeInt(cipherText.length);
-                sockOut.write(cipherText);
+                List<Hash> result = SoundAnalyzer.analyze(recordingTask.getResult());
+                sockOut.writeUTF(String.format("%010d", nonce).concat(SoundAnalyzer.marshall(result)));
                 sockOut.flush();
                 publishProgress("Sent.");
                 Log.d(TAG, "Sent all recording data.");
-
-                responsePing(crypto);
-            } catch (InterruptedException e) {
-                Log.e(TAG, "Failed to wait for recording.");
-            } catch (UnknownHostException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (AudioException e) {
-                e.printStackTrace();
+                return false;
             }
             return true;
-        }
-
-        private void responsePing(CryptoUtils crypto) throws IOException {
-            sockIn.readUTF(); // read PING
-            int nonce = sockIn.readInt();
-            byte[] cipher = crypto.doit(String.valueOf(nonce).getBytes());
-            sockOut.writeInt(cipher.length);
-            sockOut.write(cipher);
-            sockOut.flush();
-            publishProgress("Nonce: " + nonce);
         }
 
         @Override

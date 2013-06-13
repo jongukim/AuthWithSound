@@ -1,6 +1,5 @@
 package kr.ac.ajou.dv.authwithsound;
 
-import android.util.Log;
 import kr.ac.ajou.dv.authwithsound.activities.MainActivity;
 
 import java.util.*;
@@ -8,12 +7,13 @@ import java.util.concurrent.ConcurrentSkipListMap;
 
 public class SoundAnalyzer {
     public static final String TAG = MainActivity.TAG.concat(SoundAnalyzer.class.getSimpleName());
-    public static final int N_OF_EXTRACTED_TOP_POINTS = 150;
-    public static final int CLUSTERING_SIZE = 5;
+    public static final int N_STARS = 150;
+    public static final int FAN_OUT = 15;
     private static final int PATCH_SIZE = 3;
+    private static final int TARGET_ZONE_X = 50;
+    private static final int TARGET_ZONE_Y = 30;
 
-
-    public static List<Coordinate> findCorner(double[][] spectogram) {
+    public static List<Coordinate> getConstellationMap(double[][] spectogram) {
         int height = spectogram[0].length;
 
         // descending ordered sorted map: we want to collect high intentity points.
@@ -52,7 +52,7 @@ public class SoundAnalyzer {
                 for (int px = x - margin / 2; px <= x + margin / 2; px++)
                     for (int py = y - margin / 2; py <= y + margin / 2; py++)
                         altitude += iMatrix[x][y] - iMatrix[px][py];
-                if (edges.size() >= N_OF_EXTRACTED_TOP_POINTS) {
+                if (edges.size() >= N_STARS) {
                     if (edges.lastKey() > altitude) continue;
                     edges.remove(edges.lastKey());
                 }
@@ -60,7 +60,7 @@ public class SoundAnalyzer {
             }
 
         List<Coordinate> result = new Vector<Coordinate>();
-        for (int i = 0; i < N_OF_EXTRACTED_TOP_POINTS; i++) {
+        for (int i = 0; i < N_STARS; i++) {
             Map.Entry<Double, Coordinate> e = edges.pollFirstEntry();
             if (e == null) break;
             result.add(e.getValue());
@@ -68,9 +68,8 @@ public class SoundAnalyzer {
         return result;
     }
 
-
-    public static List<Coordinate> analyze(List<Coordinate> recording) {
-        Collections.sort(recording, new Comparator<Coordinate>() {
+    public static List<Hash> analyze(List<Coordinate> stars) {
+        Collections.sort(stars, new Comparator<Coordinate>() {
             @Override
             public int compare(Coordinate coord1, Coordinate coord2) {
                 if (coord1.getX() > coord2.getX()) return 1;
@@ -79,48 +78,40 @@ public class SoundAnalyzer {
             }
         });
 
-        StringBuilder peakPoints = new StringBuilder();
-        Vector<Coordinate> peaks = new Vector<Coordinate>();
-        for (int i = 0; i < recording.size(); i++) {
-            int cont = 0;
-            int px = recording.get(i).getX();
-            int py = recording.get(i).getY();
-            for (int j = i; j < recording.size() - 1; j++) {
-                int xdiff = Math.abs(recording.get(j + 1).getX() - recording.get(j).getX());
-                int ydiff = Math.abs(recording.get(j + 1).getY() - recording.get(j).getY());
-                if (xdiff <= CLUSTERING_SIZE && ydiff <= CLUSTERING_SIZE) {
-                    px += recording.get(j + 1).getX();
-                    py += recording.get(j + 1).getY();
-                    cont++;
-                } else break;
+        // FAN_OUT 개수 만큼 hash를 얻어낸다.
+        Vector<Hash> hashs = new Vector<Hash>();
+        for (int i = 0; i < stars.size(); i++) {
+            Coordinate anchor = stars.get(i);
+            for (int j = 0, k = i + 1; j < FAN_OUT && k < stars.size(); k++) {
+                Coordinate ts = stars.get(k);
+                if (anchor.getX() < ts.getX() && ts.getX() < anchor.getX() + TARGET_ZONE_X &&
+                        ts.getY() > anchor.getY() - TARGET_ZONE_Y && ts.getY() < anchor.getY() + TARGET_ZONE_Y) {
+                    hashs.add(new Hash(anchor, ts));
+                    j++;
+                }
             }
-            if (cont == 0) continue;
-
-            int x = px / (cont + 1);
-            int y = py / (cont + 1);
-            peaks.add(new Coordinate(x, y));
-            peakPoints.append(x + "," + y + "|");
-            i += cont;
         }
-        Log.d(TAG, "Peak Points: " + peakPoints.toString());
-        return peaks;
+        return hashs;
     }
 
-    public static String peaksToString(List<Coordinate> peaks) {
+    public static String marshall(List<Hash> hashs) {
         StringBuilder sb = new StringBuilder();
-        for (Coordinate c : peaks) sb.append(c.getX()).append(",").append(c.getY()).append("|");
+        for (Hash h : hashs) {
+            sb.append(h.getF1() + "," + h.getF2() + "," + h.getDt() + "," + h.getT1()).append("|");
+        }
         return sb.toString();
     }
 
-    public static List<Coordinate> stringToPeaks(String str) {
-        Log.d(TAG, "stringToPeaks: " + str);
-        Vector<Coordinate> rv = new Vector<Coordinate>();
-        for (String xyStr : str.split("[|]")) {
-            String[] xy = xyStr.split("[,]");
-            int x = Integer.parseInt(xy[0]);
-            int y = Integer.parseInt(xy[1]);
-            rv.add(new Coordinate(x, y));
+    public static List<Hash> unmarshall(String str) {
+        Vector<Hash> hashs = new Vector<Hash>();
+        for (String hash : str.split("[|]")) {
+            String[] p = hash.split("[,]");
+            int f1 = Integer.parseInt(p[0]);
+            int f2 = Integer.parseInt(p[1]);
+            int dt = Integer.parseInt(p[2]);
+            int t1 = Integer.parseInt(p[3]);
+            hashs.add(new Hash(f1, f2, dt, t1));
         }
-        return rv;
+        return hashs;
     }
 }

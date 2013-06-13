@@ -89,7 +89,7 @@ public class RecordingTask extends Thread {
             double[] analyzed = FftHelper.getAbs(FftHelper.fftw(subChunk, SUB_CHUNK_SIZE));
             spectogram[i] = analyzed;
         }
-        return SoundAnalyzer.findCorner(spectogram);
+        return SoundAnalyzer.getConstellationMap(spectogram);
     }
 
     public boolean isReady() {

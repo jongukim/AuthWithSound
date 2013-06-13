@@ -28,10 +28,9 @@ import java.util.Random;
 public class VerifierActivity extends Activity {
     public static final String TAG = MainActivity.TAG.concat(VerifierActivity.class.getSimpleName());
     private static final int MAX_TRY = 10;
-    private static final int VERIFIED_THRESHOLD = 35;
+    private static final int VERIFIED_THRESHOLD = 15;
     private static final double NANO_TO_MILLISEC = 1000.0 * 1000.0;
     private static final double NANO_TO_SEC = NANO_TO_MILLISEC * 1000.0;
-
     private ServerSocket mServerSocket;
     private int mPort = 51819;
     private TextView tv;
@@ -131,13 +130,16 @@ public class VerifierActivity extends Activity {
             try {
                 RecordingTask recordingTask = new RecordingTask(wavView);
                 WavPlayTask wavPlayTask = new WavPlayTask(ctx, WavPlayTask.ROLE_VERIFIER);
-                CryptoUtils crypto = new CryptoUtils();
 
-                if (!recordingTask.isReady() || !crypto.ready()) return false;
+                if (!recordingTask.isReady()) return false;
 
-                sockIn.readUTF(); // HELLO
                 long wholeStart = System.nanoTime();
-                if (!rttCheck(crypto)) return false;
+                Random r = new Random();
+                sockIn.readUTF(); // HELLO
+                int sentNonce = Math.abs(r.nextInt());
+                sockOut.writeUTF("CHECK");
+                sockOut.writeInt(sentNonce);
+                sockOut.flush();
 
                 // simultaneously record and play
                 recordingTask.start();
@@ -146,21 +148,29 @@ public class VerifierActivity extends Activity {
                 wavPlayTask.interrupt();
 
                 long start = System.nanoTime();
-                List<Coordinate> resultFromVerifier = SoundAnalyzer.analyze(recordingTask.getResult());
+                List<Hash> resultFromVerifier = SoundAnalyzer.analyze(recordingTask.getResult());
                 double analysisTime = System.nanoTime() - start;
                 publishProgress("TVAnalying time: " + String.format("%,.2f ms", analysisTime / NANO_TO_MILLISEC));
 
-                int recvLen = sockIn.readInt();
-                byte[] recvBuf = new byte[recvLen];
-                sockIn.read(recvBuf);
-                String recvStr = new String(crypto.doit(recvBuf));
-                List<Coordinate> resultFromProver = SoundAnalyzer.stringToPeaks(recvStr);
+                String recvStr = sockIn.readUTF();
+                Log.d(TAG, "Received String (before unmarshall): " + recvStr);
+
+                int recvNonce;
+                try {
+                    recvNonce = Integer.parseInt(recvStr.substring(0, 10));
+                    if (recvNonce != sentNonce) throw new NumberFormatException();
+                } catch (NumberFormatException e) {
+                    publishProgress("TVReceived nonce is invalid!");
+                    return false;
+                }
+                publishProgress("TVNonces (sent / received): " + sentNonce + " / " + recvNonce);
+
+                List<Hash> resultFromProver = SoundAnalyzer.unmarshall(recvStr.substring(10));
+                Log.d(TAG, "# of received hashs: " + resultFromProver.size() + ", # of recorded hashs: " + resultFromVerifier.size());
                 int matches = compare(resultFromVerifier, resultFromProver);
                 publishProgress("TVMatches: " + matches);
 
-                if (!rttCheck(crypto)) return false;
-
-                if (matches > VERIFIED_THRESHOLD) publishProgress("SVBG");
+                if (matches >= VERIFIED_THRESHOLD) publishProgress("SVBG");
                 else publishProgress("SVBR");
 
                 publishProgress("TVAuthentication time: " + String.format("%,.2f s", (System.nanoTime() - wholeStart) / NANO_TO_SEC));
@@ -172,101 +182,50 @@ public class VerifierActivity extends Activity {
             return true;
         }
 
-        private Boolean rttCheck(CryptoUtils crypto) throws IOException {
-            Random r = new Random();
-            int sentNonce = Math.abs(r.nextInt());
-            long start = System.nanoTime();
-            sockOut.writeUTF("PING");
-            sockOut.writeInt(sentNonce);
-            sockOut.flush();
-            int recvLen = sockIn.readInt(); // PONG
-            byte[] recvCipherText = new byte[recvLen];
-            sockIn.read(recvCipherText);
-            byte[] recvPlainText = crypto.doit(recvCipherText);
-            long ping = System.nanoTime() - start;
-            String recvStr = new String(recvPlainText);
-            int recvNonce;
-            try {
-                recvNonce = Integer.parseInt(recvStr);
-                if (recvNonce != sentNonce) throw new NumberFormatException();
-            } catch (NumberFormatException e) {
-                publishProgress("TVReceived nonce is invalid!");
-                return false;
-            }
-            publishProgress("TVRTT: " + String.format("%,.2f ms", ping / NANO_TO_MILLISEC));
-            publishProgress("TVNonces (sent / received): " + sentNonce + " / " + recvNonce);
-            return true;
-        }
-
-        private int compare(List<Coordinate> verifier, List<Coordinate> prover) {
+        private int compare(List<Hash> verifier, List<Hash> prover) {
             StringBuilder sb = new StringBuilder();
-            for (Coordinate c : verifier) sb.append(formatCoord(c));
-            Log.d(TAG, "From the verifier: " + sb.toString());
-            sb = new StringBuilder();
-            for (Coordinate c : prover) sb.append(formatCoord(c));
+            for (Hash h : prover) {
+                sb.append(formatHash(h)).append(" ");
+            }
             Log.d(TAG, "From the prover  : " + sb.toString());
 
-            int points = Integer.MIN_VALUE;
-            for (Coordinate v : verifier) {
-                for (Coordinate p : prover) {
-                    int xdiff = Math.abs(v.getX() - p.getX());
-                    if (xdiff <= 15 && Math.abs(v.getY() - p.getY()) <= 5) { // calibration
-                        int diff = v.getX() - p.getX();
-                        Log.d(TAG, "Datum point: " + formatCoord(v) + formatCoord(p) + " (diff: " + diff + ")");
-                        int subPoints = 0;
-                        for (Coordinate cv : verifier) {
-                            for (Coordinate cp : prover) {
-                                if (Math.abs(cv.getX() - (cp.getX() + diff)) <= 3 && Math.abs(cv.getY() - cp.getY()) <= 5) {
-                                    Log.d(TAG, "\tMatch point: " + formatCoord(cv) + formatCoord(cp));
-                                    subPoints++;
-                                }
-                            }
-                        }
-                        if (subPoints > points) {
-                            points = subPoints;
-                        }
+            sb = new StringBuilder();
+            HashMap<String, Integer> db = new HashMap<String, Integer>(); // <Hash String, t1>
+            for (Hash h : verifier) {
+                db.put(h.toString(), h.getT1());
+                sb.append(formatHash(h)).append(" ");
+            }
+            Log.d(TAG, "From the verifier: " + sb.toString());
+
+            sb = new StringBuilder();
+            HashMap<Integer, Integer> offsetCounts = new HashMap<Integer, Integer>();
+            for (Hash p : prover) {
+                if (db.containsKey(p.toString())) {
+                    int offset = db.get(p.toString()) - p.getT1();
+                    sb.append(offset + ", ");
+                    if (offsetCounts.containsKey(offset)) {
+                        offsetCounts.put(offset, offsetCounts.get(offset) + 1);
+                    } else {
+                        offsetCounts.put(offset, 1);
                     }
                 }
             }
-            Log.d(TAG, "The length of the longest path: " + points);
-
-//            while (!vPoints.isEmpty() && !pPoints.isEmpty()) {
-//                int pStart = -1;
-//                int vStart = -1;
-//                int maxLength = Integer.MIN_VALUE;
-//                for (int pi = 0; pi < pPoints.size(); pi++) {
-//                    for (int vi = 0; vi < vPoints.size(); vi++) {
-//                        int matchLength = 0;
-//                        for (int k = 0; pi + k < pPoints.size() && vi + k < vPoints.size(); k++) {
-//                            if (isSimilar(pPoints.get(pi + k), vPoints.get(vi + k))) matchLength++;
-//                            else break;
-//                        }
-//                        if (matchLength > maxLength) {
-//                            pStart = pi;
-//                            vStart = vi;
-//                            maxLength = matchLength;
-//                        }
-//                    }
-//                }
-//                if (maxLength < CONTINUOUS_MATCH_THRESHOLD) break;
-//                points += maxLength;
-//                for (int i = 0; i < maxLength; i++) {
-//                    pPoints.remove(pStart);
-//                    vPoints.remove(vStart);
-//                }
-//                Log.d(TAG, "Match! The found length: " + maxLength);
-//            }
-            return points;
+            Log.d(TAG, "Matches (offsets): " + sb.toString());
+            int max = Integer.MIN_VALUE;
+            for (int v : offsetCounts.values()) {
+                if (v > max) max = v;
+            }
+            return max;
         }
 
-        private String formatCoord(Coordinate c) {
-            return "[" + String.format("%3d", c.getX()) + "," + String.format("%3d", c.getY()) + "]";
+        private String formatHash(Hash h) {
+            return "[" +
+                    String.format("%03d", h.getF1()) + ":" +
+                    String.format("%03d", h.getF2()) + ":" +
+                    String.format("%03d", h.getDt()) + ":" +
+                    "]:" +
+                    String.format("%03d", h.getT1()) + "]";
         }
-
-//        private boolean isSimilar(int pPoint, int vPoint) {
-//            if (Math.abs(pPoint - vPoint) <= SIMILAR_POINT) return true;
-//            else return false;
-//        }
 
         @Override
         protected void onProgressUpdate(String... values) {
