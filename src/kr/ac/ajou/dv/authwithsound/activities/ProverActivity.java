@@ -1,9 +1,7 @@
 package kr.ac.ajou.dv.authwithsound.activities;
 
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -29,8 +27,11 @@ public class ProverActivity extends Activity {
     private ObjectOutputStream sockOut;
     private ObjectInputStream sockIn;
     private WavDrawView wavView;
+    private int play;
 
     public void onCreate(Bundle savedInstanceState) {
+        play = getIntent().getIntExtra("PLAY", MainActivity.PLAY_NO_SOUND);
+        Log.d(TAG, "PLAY: " + play);
         /*
         Starts the Barcode Scanner app.
          */
@@ -113,9 +114,9 @@ public class ProverActivity extends Activity {
 
                 // recording and playing at the same time
                 recordingTask.start();
-                wavPlayTask.start();
+                if (play == MainActivity.PLAY_BOTH) wavPlayTask.start();
                 recordingTask.join();
-                wavPlayTask.interrupt();
+                if (play == MainActivity.PLAY_BOTH) wavPlayTask.interrupt();
 
                 List<Hash> result = SoundAnalyzer.analyze(recordingTask.getResult());
                 sockOut.writeUTF(String.format("%010d", nonce).concat(SoundAnalyzer.marshall(result)));
@@ -146,21 +147,6 @@ public class ProverActivity extends Activity {
                 sockIn.close();
                 socket.close();
             } catch (IOException e) {
-            }
-            if (result) {
-                new AlertDialog.Builder(ProverActivity.this)
-                        .setIcon(android.R.drawable.ic_dialog_alert)
-                        .setTitle("Authentication")
-                        .setMessage("Next prover?")
-                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-                                finish();
-                                startActivity(getIntent());
-                            }
-                        })
-                        .create()
-                        .show();
             }
         }
     }

@@ -9,6 +9,25 @@
               android:layout_width="wrap_content"
               android:textSize="15sp"/>
 
+    <RadioGroup
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content" android:id="@+id/radioButton">
+        <RadioButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="No sounds"
+                android:id="@+id/radioButtonNoSound" android:checked="true"/>
+        <RadioButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Make sound only by a verifier"
+                android:id="@+id/radioButtonVerifier"/>
+        <RadioButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Both make sounds"
+                android:id="@+id/radioButtonBoth" android:checked="false"/>
+    </RadioGroup>
     <Button android:id="@+id/main_button_prover"
             android:layout_height="match_parent"
             android:layout_width="match_parent"
@@ -17,12 +36,6 @@
             android:onClick="startProver"
             android:textSize="25sp"/>
 
-    <Button android:id="@+id/main_button_malicious_verifier" android:layout_height="match_parent"
-            android:layout_width="match_parent" android:layout_weight="0.2" android:text="@string/button_label_malicious_verifier"
-            android:onClick="startMaliciousVerifier" android:textSize="25sp"/>
-    <Button android:id="@+id/main_button_malicious_prover" android:layout_height="match_parent"
-            android:layout_width="match_parent" android:layout_weight="0.2" android:text="@string/button_label_malicious_prover"
-            android:onClick="startMaliciousProver" android:textSize="25sp"/>
     <Button android:id="@+id/main_button_verifier"
             android:layout_height="match_parent"
             android:layout_width="match_parent"

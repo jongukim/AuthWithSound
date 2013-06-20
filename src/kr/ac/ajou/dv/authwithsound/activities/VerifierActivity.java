@@ -1,9 +1,7 @@
 package kr.ac.ajou.dv.authwithsound.activities;
 
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
 import android.net.wifi.WifiInfo;
@@ -40,10 +38,13 @@ public class VerifierActivity extends Activity {
     private ObjectInputStream sockIn;
     private ObjectOutputStream sockOut;
     private WavDrawView wavView;
+    private int play;
 
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.verifier);
+        play = getIntent().getExtras().getInt("PLAY", MainActivity.PLAY_NO_SOUND);
+        Log.d(TAG, "PLAY: " + play);
         ctx = this.getApplicationContext();
         wavView = (WavDrawView) findViewById(R.id.verifier_wavform);
         tv = (TextView) findViewById(R.id.verifier_log);
@@ -143,9 +144,9 @@ public class VerifierActivity extends Activity {
 
                 // simultaneously record and play
                 recordingTask.start();
-                wavPlayTask.start();
+                if (play == MainActivity.PLAY_ONLY_VERIFIER || play == MainActivity.PLAY_BOTH) wavPlayTask.start();
                 recordingTask.join();
-                wavPlayTask.interrupt();
+                if (play == MainActivity.PLAY_ONLY_VERIFIER || play == MainActivity.PLAY_BOTH) wavPlayTask.interrupt();
 
                 long start = System.nanoTime();
                 List<Hash> resultFromVerifier = SoundAnalyzer.analyze(recordingTask.getResult());
@@ -201,12 +202,12 @@ public class VerifierActivity extends Activity {
             HashMap<Integer, Integer> offsetCounts = new HashMap<Integer, Integer>();
             for (Hash p : prover) {
                 if (db.containsKey(p.toString())) {
-                    int offset = db.get(p.toString()) - p.getT1();
-                    sb.append(offset + ", ");
-                    if (offsetCounts.containsKey(offset)) {
-                        offsetCounts.put(offset, offsetCounts.get(offset) + 1);
+                    int skew = db.get(p.toString()) - p.getT1();
+                    sb.append(skew + ", ");
+                    if (offsetCounts.containsKey(skew)) {
+                        offsetCounts.put(skew, offsetCounts.get(skew) + 1);
                     } else {
-                        offsetCounts.put(offset, 1);
+                        offsetCounts.put(skew, 1);
                     }
                 }
             }
@@ -224,7 +225,7 @@ public class VerifierActivity extends Activity {
                     String.format("%03d", h.getF2()) + ":" +
                     String.format("%03d", h.getDt()) + ":" +
                     "]:" +
-                    String.format("%03d", h.getT1()) + "]";
+                    String.format("%03d", h.getT1());
         }
 
         @Override
@@ -252,24 +253,11 @@ public class VerifierActivity extends Activity {
                 sockIn.close();
                 sockOut.close();
                 mSocket.close();
+                mServerSocket.close();
             } catch (IOException e) {
+                Log.d(TAG, "Failed to close sockets.");
             }
             wavView.invalidate();
-            if (result) {
-                new AlertDialog.Builder(VerifierActivity.this)
-                        .setIcon(android.R.drawable.ic_dialog_alert)
-                        .setTitle("Authentication")
-                        .setMessage("Waiting for the next prover?")
-                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-                                finish();
-                                startActivity(getIntent());
-                            }
-                        })
-                        .create()
-                        .show();
-            }
         }
     }
 }

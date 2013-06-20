@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 import kr.ac.ajou.dv.authwithsound.R;
 
@@ -17,6 +18,10 @@ prover  : starts a camera. After taking a QR code, it tries to connect to the pe
 */
 public class MainActivity extends Activity {
     public static final String TAG = "AuthWithSound";
+    public static final int PLAY_NO_SOUND = 1;
+    public static final int PLAY_ONLY_VERIFIER = 2;
+    public static final int PLAY_BOTH = 3;
+    private RadioGroup radioButton;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -33,30 +38,35 @@ public class MainActivity extends Activity {
             findViewById(R.id.main_button_prover).setEnabled(false);
             findViewById(R.id.main_button_verifier).setEnabled(false);
         }
+
+        radioButton = (RadioGroup) findViewById(R.id.radioButton);
     }
 
     @SuppressWarnings("unused")
     public void startProver(View view) {
         Intent intent = new Intent(this, ProverActivity.class);
-        startActivity(intent);
-    }
-
-    @SuppressWarnings("unused")
-    public void startMaliciousProver(View view) {
-        Intent intent = new Intent(this, MaliciousProverActivity.class);
+        intent.putExtra("PLAY", getCheckedRadioPlay());
         startActivity(intent);
     }
 
     @SuppressWarnings("unused")
     public void startVerifier(View view) {
         Intent intent = new Intent(this, VerifierActivity.class);
+        intent.putExtra("PLAY", getCheckedRadioPlay());
         startActivity(intent);
     }
 
-    @SuppressWarnings("unused")
-    public void startMaliciousVerifier(View view) {
-        Intent intent = new Intent(this, MaliciousVerifierActivity.class);
-        startActivity(intent);
+    private int getCheckedRadioPlay() {
+        switch (radioButton.getCheckedRadioButtonId()) {
+            case R.id.radioButtonNoSound:
+                return PLAY_NO_SOUND;
+            case R.id.radioButtonVerifier:
+                return PLAY_ONLY_VERIFIER;
+            case R.id.radioButtonBoth:
+                return PLAY_BOTH;
+            default:
+                return PLAY_NO_SOUND;
+        }
     }
 
     @SuppressWarnings("unused")
