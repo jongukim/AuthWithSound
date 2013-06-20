@@ -6,6 +6,8 @@ import android.media.MediaPlayer;
 import android.util.Log;
 import kr.ac.ajou.dv.authwithsound.activities.MainActivity;
 
+import java.util.Random;
+
 public class WavPlayTask extends Thread {
     public static final String TAG = MainActivity.TAG.concat(WavPlayTask.class.getSimpleName());
     public static final int ROLE_VERIFIER = 1;
@@ -13,6 +15,7 @@ public class WavPlayTask extends Thread {
     private static final int MAX_PLAYING_TIME = 5000; // ms
     private final Context ctx;
     private final int which;
+    private final Random rand;
 
     public WavPlayTask(Context ctx, int role) {
         this.ctx = ctx;
@@ -21,6 +24,7 @@ public class WavPlayTask extends Thread {
         audioManager.setStreamVolume(
                 AudioManager.STREAM_MUSIC,
                 (int) (audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC) * ((which == ROLE_VERIFIER) ? 0.65 : 0.7)), 0);
+        rand = new Random();
     }
 
     @Override
@@ -28,7 +32,7 @@ public class WavPlayTask extends Thread {
         MediaPlayer mp = MediaPlayer.create(ctx, (which == ROLE_VERIFIER) ? R.raw.stutter : R.raw.billie_jean);
         mp.setVolume(1.0f, 1.0f);
 
-        int startPoint = (which == ROLE_VERIFIER) ? mp.getDuration() / 2 : mp.getDuration() / 2;
+        int startPoint = (int) ((mp.getDuration() - MAX_PLAYING_TIME) * rand.nextDouble());
         mp.seekTo(startPoint);
         mp.start();
         try {
