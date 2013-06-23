@@ -9,9 +9,14 @@
               android:layout_width="wrap_content"
               android:textSize="15sp"/>
 
+    <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Who makes sounds?"
+            android:id="@+id/textView" android:textStyle="bold" android:textSize="20sp"/>
     <RadioGroup
             android:layout_width="fill_parent"
-            android:layout_height="wrap_content" android:id="@+id/radioButton">
+            android:layout_height="wrap_content" android:id="@+id/radioButtonSoundByWho">
         <RadioButton
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -27,6 +32,21 @@
                 android:layout_height="wrap_content"
                 android:text="Both make sounds"
                 android:id="@+id/radioButtonBoth" android:checked="false"/>
+    </RadioGroup>
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+              android:text="How many samples?" android:id="@+id/textView2" android:textStyle="bold"
+              android:textSize="20sp"/>
+    <RadioGroup android:layout_width="fill_parent" android:layout_height="wrap_content"
+                android:id="@+id/radioButtonSampleCount" android:orientation="horizontal">
+        <RadioButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="25"
+                android:id="@+id/radioButtonSampleCount25"/>
+        <RadioButton android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="50"
+                     android:id="@+id/radioButtonSampleCount50" android:checked="true"/>
+        <RadioButton android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="75"
+                     android:id="@+id/radioButtonSampleCount75"/>
     </RadioGroup>
     <Button android:id="@+id/main_button_prover"
             android:layout_height="match_parent"

@@ -28,10 +28,12 @@ public class ProverActivity extends Activity {
     private ObjectInputStream sockIn;
     private WavDrawView wavView;
     private int play;
+    private int fftSize;
+    private int sampleCount;
 
     public void onCreate(Bundle savedInstanceState) {
         play = getIntent().getIntExtra("PLAY", MainActivity.PLAY_NO_SOUND);
-        Log.d(TAG, "PLAY: " + play);
+        sampleCount = getIntent().getIntExtra("SAMPLECOUNT", 50);
         /*
         Starts the Barcode Scanner app.
          */
@@ -100,7 +102,7 @@ public class ProverActivity extends Activity {
         @Override
         protected Boolean doInBackground(Void... voids) {
             try {
-                RecordingTask recordingTask = new RecordingTask(wavView);
+                RecordingTask recordingTask = new RecordingTask(wavView, sampleCount);
                 WavPlayTask wavPlayTask = new WavPlayTask(ctx, WavPlayTask.ROLE_PROVER);
 
                 if (!recordingTask.isReady()) return false;

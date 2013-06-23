@@ -26,9 +26,7 @@ import java.util.Random;
 public class VerifierActivity extends Activity {
     public static final String TAG = MainActivity.TAG.concat(VerifierActivity.class.getSimpleName());
     private static final int MAX_TRY = 10;
-    private static final int VERIFIED_THRESHOLD = 15;
-    private static final double NANO_TO_MILLISEC = 1000.0 * 1000.0;
-    private static final double NANO_TO_SEC = NANO_TO_MILLISEC * 1000.0;
+    private static final double NANO_TO_SEC = 1000.0 * 1000.0 * 1000.0;
     private ServerSocket mServerSocket;
     private int mPort = 51819;
     private TextView tv;
@@ -39,11 +37,13 @@ public class VerifierActivity extends Activity {
     private ObjectOutputStream sockOut;
     private WavDrawView wavView;
     private int play;
+    private int sampleCount;
 
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.verifier);
-        play = getIntent().getExtras().getInt("PLAY", MainActivity.PLAY_NO_SOUND);
+        play = getIntent().getIntExtra("PLAY", MainActivity.PLAY_NO_SOUND);
+        sampleCount = getIntent().getIntExtra("SAMPLECOUNT", 50);
         Log.d(TAG, "PLAY: " + play);
         ctx = this.getApplicationContext();
         wavView = (WavDrawView) findViewById(R.id.verifier_wavform);
@@ -129,29 +129,30 @@ public class VerifierActivity extends Activity {
         @Override
         protected Boolean doInBackground(Void... voids) {
             try {
-                RecordingTask recordingTask = new RecordingTask(wavView);
+                RecordingTask recordingTask = new RecordingTask(wavView, sampleCount);
                 WavPlayTask wavPlayTask = new WavPlayTask(ctx, WavPlayTask.ROLE_VERIFIER);
 
                 if (!recordingTask.isReady()) return false;
 
-                long wholeStart = System.nanoTime();
                 Random r = new Random();
                 sockIn.readUTF(); // HELLO
+                long wholeStart = System.nanoTime();
                 int sentNonce = Math.abs(r.nextInt());
                 sockOut.writeUTF("CHECK");
                 sockOut.writeInt(sentNonce);
                 sockOut.flush();
 
                 // simultaneously record and play
+                long start = System.nanoTime();
                 recordingTask.start();
                 if (play == MainActivity.PLAY_ONLY_VERIFIER || play == MainActivity.PLAY_BOTH) wavPlayTask.start();
                 recordingTask.join();
                 if (play == MainActivity.PLAY_ONLY_VERIFIER || play == MainActivity.PLAY_BOTH) wavPlayTask.interrupt();
+                publishProgress("Recoding time: " + String.format("%,.2f s", (System.nanoTime() - start) / NANO_TO_SEC));
 
-                long start = System.nanoTime();
+                start = System.nanoTime();
                 List<Hash> resultFromVerifier = SoundAnalyzer.analyze(recordingTask.getResult());
-                double analysisTime = System.nanoTime() - start;
-                publishProgress("TVAnalying time: " + String.format("%,.2f ms", analysisTime / NANO_TO_MILLISEC));
+                publishProgress("Analying time: " + String.format("%,.2f s", (System.nanoTime() - start) / NANO_TO_SEC));
 
                 String recvStr = sockIn.readUTF();
                 Log.d(TAG, "Received String (before unmarshall): " + recvStr);
@@ -161,20 +162,17 @@ public class VerifierActivity extends Activity {
                     recvNonce = Integer.parseInt(recvStr.substring(0, 10));
                     if (recvNonce != sentNonce) throw new NumberFormatException();
                 } catch (NumberFormatException e) {
-                    publishProgress("TVReceived nonce is invalid!");
+                    publishProgress("Received nonce is invalid!");
                     return false;
                 }
-                publishProgress("TVNonces (sent / received): " + sentNonce + " / " + recvNonce);
+                publishProgress("Nonces (sent / received): " + sentNonce + " / " + recvNonce);
 
                 List<Hash> resultFromProver = SoundAnalyzer.unmarshall(recvStr.substring(10));
                 Log.d(TAG, "# of received hashs: " + resultFromProver.size() + ", # of recorded hashs: " + resultFromVerifier.size());
+                start = System.nanoTime();
                 int matches = compare(resultFromVerifier, resultFromProver);
-                publishProgress("TVMatches: " + matches);
-
-                if (matches >= VERIFIED_THRESHOLD) publishProgress("SVBG");
-                else publishProgress("SVBR");
-
-                publishProgress("TVAuthentication time: " + String.format("%,.2f s", (System.nanoTime() - wholeStart) / NANO_TO_SEC));
+                publishProgress("Matches: " + matches + ", Sound check time: " + String.format("%,.2f s", (System.nanoTime() - start) / NANO_TO_SEC));
+                publishProgress("Authentication time: " + String.format("%,.2f s", (System.nanoTime() - wholeStart) / NANO_TO_SEC));
             } catch (Exception e) {
                 e.printStackTrace();
                 return false;
@@ -200,10 +198,12 @@ public class VerifierActivity extends Activity {
 
             sb = new StringBuilder();
             HashMap<Integer, Integer> offsetCounts = new HashMap<Integer, Integer>();
+            int ctHashMatch = 0;
             for (Hash p : prover) {
                 if (db.containsKey(p.toString())) {
                     int skew = db.get(p.toString()) - p.getT1();
                     sb.append(skew + ", ");
+                    ctHashMatch++;
                     if (offsetCounts.containsKey(skew)) {
                         offsetCounts.put(skew, offsetCounts.get(skew) + 1);
                     } else {
@@ -211,7 +211,7 @@ public class VerifierActivity extends Activity {
                     }
                 }
             }
-            Log.d(TAG, "Matches (offsets): " + sb.toString());
+            Log.d(TAG, "Matches (" + ctHashMatch + "): " + sb.toString());
             int max = Integer.MIN_VALUE;
             for (int v : offsetCounts.values()) {
                 if (v > max) max = v;
@@ -233,17 +233,7 @@ public class VerifierActivity extends Activity {
             super.onProgressUpdate(values);
             if (values.length != 1) return;
             String out = values[0];
-            String rest = out.substring(2);
-            if (out.startsWith("TV")) {
-                tv.append("\n" + rest);
-            } else if (out.startsWith("SV")) {
-                if (rest.equals("BG")) {
-                    sv.setBackgroundColor(Color.GREEN);
-                } else {
-                    sv.setBackgroundColor(Color.RED);
-                }
-                tv.setBackgroundColor(Color.GRAY);
-            }
+            tv.append("\n" + out);
         }
 
         @Override

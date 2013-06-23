@@ -10,22 +10,21 @@ import java.util.List;
 
 public class RecordingTask extends Thread {
     public static final String TAG = MainActivity.TAG.concat(RecordingTask.class.getSimpleName());
-
-    private static final int INITIAL_TRASH = 2;
-    private static final int WINDOW_SIZE = 8; // Total chunks = WINDOW_SIZE * SAMPLE_COUNT
+    private static final int INITIAL_TRASH = 3;
     private static final int SAMPLE_RATE = 32000;
-    private static final int SAMPLE_COUNT = 50;
     private static final int BUFFER_SIZE = 4096;
+    private static final int FFT_SIZE = 512;
     private static final int SAMPLE_SIZE = BUFFER_SIZE / (Short.SIZE / Byte.SIZE);
-    private static final int SUB_CHUNK_SIZE = SAMPLE_SIZE / WINDOW_SIZE;
     private AudioRecord audioRecord;
     private boolean isReady;
     private short[] soundData;
     private WavDrawView wavView;
+    private int sampleCount;
 
-    public RecordingTask(WavDrawView wavDrawView) throws AudioException {
+    public RecordingTask(WavDrawView wavDrawView, int sampleCount) throws AudioException {
         isReady = false;
         wavView = wavDrawView;
+        this.sampleCount = sampleCount;
         int minBufferSize = AudioRecord.getMinBufferSize(
                 SAMPLE_RATE,
                 AudioFormat.CHANNEL_IN_MONO,
@@ -48,11 +47,11 @@ public class RecordingTask extends Thread {
 
     @Override
     public void run() {
-        soundData = new short[SAMPLE_COUNT * SAMPLE_SIZE];
+        soundData = new short[sampleCount * SAMPLE_SIZE];
         audioRecord.startRecording();
 
         int position = 0;
-        for (int nRecordedSamples = -INITIAL_TRASH; nRecordedSamples < SAMPLE_COUNT; nRecordedSamples++) {
+        for (int nRecordedSamples = -INITIAL_TRASH; nRecordedSamples < sampleCount; nRecordedSamples++) {
             short[] audio = new short[SAMPLE_SIZE];
             int read = audioRecord.read(audio, 0, SAMPLE_SIZE); // Digitalize the sound
             if (read == AudioRecord.ERROR_INVALID_OPERATION || read == AudioRecord.ERROR_BAD_VALUE) break;
@@ -80,13 +79,13 @@ public class RecordingTask extends Thread {
             y = newY;
         }
 
-        int nSubChunks = soundData.length / SUB_CHUNK_SIZE;
+        int nSubChunks = soundData.length / FFT_SIZE;
         double[][] spectogram = new double[nSubChunks][];
 
         for (int i = 0; i < nSubChunks; i++) {
-            double[] subChunk = new double[SUB_CHUNK_SIZE];
-            for (int j = 0; j < SUB_CHUNK_SIZE; j++) subChunk[j] = (double) soundData[i * SUB_CHUNK_SIZE + j];
-            double[] analyzed = FftHelper.getAbs(FftHelper.fftw(subChunk, SUB_CHUNK_SIZE));
+            double[] subChunk = new double[FFT_SIZE];
+            for (int j = 0; j < FFT_SIZE; j++) subChunk[j] = (double) soundData[i * FFT_SIZE + j];
+            double[] analyzed = FftHelper.getAbs(FftHelper.fftw(subChunk, FFT_SIZE));
             spectogram[i] = analyzed;
         }
         return SoundAnalyzer.getConstellationMap(spectogram);

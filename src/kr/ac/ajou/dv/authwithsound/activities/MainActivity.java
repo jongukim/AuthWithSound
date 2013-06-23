@@ -21,7 +21,8 @@ public class MainActivity extends Activity {
     public static final int PLAY_NO_SOUND = 1;
     public static final int PLAY_ONLY_VERIFIER = 2;
     public static final int PLAY_BOTH = 3;
-    private RadioGroup radioButton;
+    private RadioGroup radioButtonSoundByWho;
+    private RadioGroup radioButtonSampleCount;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -39,39 +40,60 @@ public class MainActivity extends Activity {
             findViewById(R.id.main_button_verifier).setEnabled(false);
         }
 
-        radioButton = (RadioGroup) findViewById(R.id.radioButton);
+        radioButtonSoundByWho = (RadioGroup) findViewById(R.id.radioButtonSoundByWho);
+        radioButtonSampleCount = (RadioGroup) findViewById(R.id.radioButtonSampleCount);
     }
 
     @SuppressWarnings("unused")
     public void startProver(View view) {
         Intent intent = new Intent(this, ProverActivity.class);
-        intent.putExtra("PLAY", getCheckedRadioPlay());
+        packIntentWithRadios(intent);
         startActivity(intent);
     }
 
     @SuppressWarnings("unused")
     public void startVerifier(View view) {
         Intent intent = new Intent(this, VerifierActivity.class);
-        intent.putExtra("PLAY", getCheckedRadioPlay());
+        packIntentWithRadios(intent);
         startActivity(intent);
-    }
-
-    private int getCheckedRadioPlay() {
-        switch (radioButton.getCheckedRadioButtonId()) {
-            case R.id.radioButtonNoSound:
-                return PLAY_NO_SOUND;
-            case R.id.radioButtonVerifier:
-                return PLAY_ONLY_VERIFIER;
-            case R.id.radioButtonBoth:
-                return PLAY_BOTH;
-            default:
-                return PLAY_NO_SOUND;
-        }
     }
 
     @SuppressWarnings("unused")
     public void startFftTest(View view) {
         Intent intent = new Intent(this, FftTestActivity.class);
         startActivity(intent);
+    }
+
+    private void packIntentWithRadios(Intent intent) {
+        int playByWho, fftSize, sampleCount;
+        switch (radioButtonSoundByWho.getCheckedRadioButtonId()) {
+            case R.id.radioButtonNoSound:
+                playByWho = PLAY_NO_SOUND;
+                break;
+            case R.id.radioButtonVerifier:
+                playByWho = PLAY_ONLY_VERIFIER;
+                break;
+            case R.id.radioButtonBoth:
+                playByWho = PLAY_BOTH;
+                break;
+            default:
+                playByWho = PLAY_NO_SOUND;
+        }
+        intent.putExtra("PLAY", playByWho);
+
+        switch (radioButtonSampleCount.getCheckedRadioButtonId()) {
+            case R.id.radioButtonSampleCount25:
+                sampleCount = 25;
+                break;
+            case R.id.radioButtonSampleCount50:
+                sampleCount = 50;
+                break;
+            case R.id.radioButtonSampleCount75:
+                sampleCount = 75;
+                break;
+            default:
+                sampleCount = 50;
+        }
+        intent.putExtra("SAMPLECOUNT", sampleCount);
     }
 }
