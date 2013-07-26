@@ -82,17 +82,17 @@ public class MainActivity extends Activity {
         intent.putExtra("PLAY", playByWho);
 
         switch (radioButtonSampleCount.getCheckedRadioButtonId()) {
+            case R.id.radioButtonSampleCount15:
+                sampleCount = 15;
+                break;
             case R.id.radioButtonSampleCount25:
                 sampleCount = 25;
                 break;
             case R.id.radioButtonSampleCount50:
                 sampleCount = 50;
                 break;
-            case R.id.radioButtonSampleCount75:
-                sampleCount = 75;
-                break;
             default:
-                sampleCount = 50;
+                sampleCount = 25;
         }
         intent.putExtra("SAMPLECOUNT", sampleCount);
     }

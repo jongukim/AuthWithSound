@@ -41,12 +41,12 @@
         <RadioButton
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="25"
-                android:id="@+id/radioButtonSampleCount25"/>
+                android:text="15"
+                android:id="@+id/radioButtonSampleCount15"/>
+        <RadioButton android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="25"
+                     android:id="@+id/radioButtonSampleCount25" android:checked="true"/>
         <RadioButton android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="50"
-                     android:id="@+id/radioButtonSampleCount50" android:checked="true"/>
-        <RadioButton android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="75"
-                     android:id="@+id/radioButtonSampleCount75"/>
+                     android:id="@+id/radioButtonSampleCount50"/>
     </RadioGroup>
     <Button android:id="@+id/main_button_prover"
             android:layout_height="match_parent"

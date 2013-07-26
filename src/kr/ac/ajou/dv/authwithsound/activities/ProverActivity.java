@@ -121,7 +121,9 @@ public class ProverActivity extends Activity {
                 if (play == MainActivity.PLAY_BOTH) wavPlayTask.interrupt();
 
                 List<Hash> result = SoundAnalyzer.analyze(recordingTask.getResult());
-                sockOut.writeUTF(String.format("%010d", nonce).concat(SoundAnalyzer.marshall(result)));
+                String msg = String.format("%010d", nonce).concat(SoundAnalyzer.marshall(result));
+                publishProgress("Message size: " + msg.length());
+                sockOut.writeUTF(msg);
                 sockOut.flush();
                 publishProgress("Sent.");
                 Log.d(TAG, "Sent all recording data.");

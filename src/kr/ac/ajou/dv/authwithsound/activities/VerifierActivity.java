@@ -216,6 +216,7 @@ public class VerifierActivity extends Activity {
             for (int v : offsetCounts.values()) {
                 if (v > max) max = v;
             }
+            if (max == Integer.MIN_VALUE) max = 0;
             return max;
         }
 
